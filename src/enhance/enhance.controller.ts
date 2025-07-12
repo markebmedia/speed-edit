@@ -5,56 +5,51 @@ import {
   UseInterceptors,
   Body,
   Res,
-  HttpStatus
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
-import { Response } from 'express';
 import { EnhanceService } from './enhance.service';
-import * as fs from 'fs';
 
-@Controller('enhance')
+@Controller()
 export class EnhanceController {
   constructor(private readonly enhanceService: EnhanceService) {}
 
-  @Post()
+  @Post('enhance')
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
         destination: './uploads',
-        filename: (req, file, cb) => {
+        filename: (req, file, callback) => {
           const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-          cb(null, `${file.fieldname}-${uniqueSuffix}${extname(file.originalname)}`);
-        }
-      })
-    })
+          const ext = extname(file.originalname);
+          callback(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
+        },
+      }),
+    }),
   )
-  async handleEnhance(
+  async handleEnhancement(
     @UploadedFile() file: Express.Multer.File,
-    @Body() body: { imageType: string },
-    @Res() res: Response
+    @Body() body: any,
+    @Res() res
   ) {
-    if (!file || !body.imageType) {
-      return res.status(HttpStatus.BAD_REQUEST).json({ message: 'Missing file or imageType' });
-    }
+    const { imageType } = body;
 
     try {
-      const enhancedPath = await this.enhanceService.enhanceImage(file, body.imageType);
-      const finalBuffer = fs.readFileSync(enhancedPath);
+      const enhancedPath = await this.enhanceService.enhanceImage(file, imageType);
 
-      res.setHeader('Content-Type', 'image/jpeg');
-      res.setHeader(
-        'Content-Disposition',
-        `attachment; filename="enhanced-${file.filename}"`
-      );
-      res.send(finalBuffer);
+      const imageUrl = `https://speed-edit.onrender.com/${enhancedPath.replace('uploads/', '')}`;
+
+      return res.json({
+        message: 'Enhanced successfully!',
+        imageUrl
+      });
     } catch (error) {
-      return res
-        .status(HttpStatus.INTERNAL_SERVER_ERROR)
-        .json({ message: 'Failed to enhance image', error: error?.message || error });
+      console.error('Enhancement failed:', error);
+      return res.status(500).json({ message: 'Enhancement failed' });
     }
   }
 }
+
 
 

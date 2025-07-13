@@ -4,19 +4,17 @@ import {
   UploadedFile,
   UseInterceptors,
   Body,
-  Res,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
-import { Response } from 'express'; // ✅ Import Response type
 import { EnhanceService } from './enhance.service';
 
-@Controller()
+@Controller('enhance')
 export class EnhanceController {
   constructor(private readonly enhanceService: EnhanceService) {}
 
-  @Post('enhance')
+  @Post()
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
@@ -31,25 +29,15 @@ export class EnhanceController {
   )
   async handleEnhancement(
     @UploadedFile() file: Express.Multer.File,
-    @Body() body: any,
-    @Res() res: Response // ✅ Add type here
+    @Body('imageType') imageType: string
   ) {
-    const { imageType } = body;
-
-    try {
-      const enhancedPath = await this.enhanceService.enhanceImage(file, imageType);
-
-      const imageUrl = `https://speed-edit.onrender.com/${enhancedPath.replace('uploads/', '')}`;
-
-      return res.json({
-        message: 'Enhanced successfully!',
-        imageUrl
-      });
-    } catch (error) {
-      console.error('Enhancement failed:', error);
-      return res.status(500).json({ message: 'Enhancement failed' });
-    }
+    const imageUrl = await this.enhanceService.enhanceImage(file, imageType);
+    return {
+      message: 'Image enhanced successfully',
+      imageUrl,
+    };
   }
 }
+
 
 

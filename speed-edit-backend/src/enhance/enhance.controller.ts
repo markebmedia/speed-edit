@@ -9,6 +9,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import { Response } from 'express'; // ✅ Import Response type
 import { EnhanceService } from './enhance.service';
 
 @Controller()
@@ -31,7 +32,7 @@ export class EnhanceController {
   async handleEnhancement(
     @UploadedFile() file: Express.Multer.File,
     @Body() body: any,
-    @Res() res
+    @Res() res: Response // ✅ Add type here
   ) {
     const { imageType } = body;
 
@@ -50,6 +51,5 @@ export class EnhanceController {
     }
   }
 }
-
 
 
